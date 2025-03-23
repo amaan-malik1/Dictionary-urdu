@@ -1,0 +1,26 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "words",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "word",
+                    "order": "ASCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": [
+        {
+            "collectionGroup": "words",
+            "fieldPath": "searchTerms",
+            "indexes": [
+                {
+                    "order": "ASCENDING",
+                    "queryScope": "COLLECTION"
+                }
+            ]
+        }
+    ]
+}

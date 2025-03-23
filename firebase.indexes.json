@@ -1,0 +1,18 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "words",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "searchTerms",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "word",
+                    "order": "ASCENDING"
+                }
+            ]
+        }
+    ]
+}

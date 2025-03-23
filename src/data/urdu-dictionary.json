@@ -1,0 +1,222 @@
+{
+    "words": [
+        {
+            "id": "word1",
+            "word": "اردو",
+            "roman": "urdu",
+            "pronunciation": "ur-doo",
+            "definitions": [
+                "The national language of Pakistan",
+                "A language that combines Persian, Arabic, and Hindi elements",
+                "A beautiful and poetic language"
+            ],
+            "examples": [
+                "اردو پاکستان کی قومی زبان ہے",
+                "میں اردو بولتا ہوں"
+            ],
+            "synonyms": [
+                "زبان",
+                "بولی"
+            ],
+            "categories": [
+                "Language",
+                "Culture"
+            ],
+            "tags": [
+                "official",
+                "national"
+            ]
+        },
+        {
+            "id": "word2",
+            "word": "کتاب",
+            "roman": "kitaab",
+            "pronunciation": "ki-taab",
+            "definitions": [
+                "A book or written work",
+                "A collection of written pages bound together",
+                "A source of knowledge and learning"
+            ],
+            "examples": [
+                "یہ ایک اچھی کتاب ہے",
+                "میں کتاب پڑھ رہا ہوں"
+            ],
+            "synonyms": [
+                "کتاب",
+                "لکھی"
+            ],
+            "categories": [
+                "Literature",
+                "Education"
+            ],
+            "tags": [
+                "written",
+                "printed"
+            ]
+        },
+        {
+            "id": "word3",
+            "word": "محبت",
+            "roman": "mohabbat",
+            "pronunciation": "mo-hab-bat",
+            "definitions": [
+                "Love or affection",
+                "Deep emotional attachment",
+                "A strong feeling of care and concern"
+            ],
+            "examples": [
+                "محبت ایک خوبصورت احساس ہے",
+                "میں تم سے محبت کرتا ہوں"
+            ],
+            "synonyms": [
+                "پیار",
+                "عشق",
+                "دوستی"
+            ],
+            "categories": [
+                "Emotions",
+                "Relationships"
+            ],
+            "tags": [
+                "love",
+                "emotion"
+            ]
+        },
+        {
+            "id": "word4",
+            "word": "زندگی",
+            "roman": "zindagi",
+            "pronunciation": "zin-da-gi",
+            "definitions": [
+                "Life or existence",
+                "The period between birth and death",
+                "The experience of living"
+            ],
+            "examples": [
+                "زندگی خوبصورت ہے",
+                "زندگی میں کچھ بھی ناممکن نہیں"
+            ],
+            "synonyms": [
+                "زندگی",
+                "عمر",
+                "آدمیت"
+            ],
+            "categories": [
+                "Life",
+                "Philosophy"
+            ],
+            "tags": [
+                "life",
+                "philosophy"
+            ]
+        },
+        {
+            "word": "خوشی",
+            "roman": "khushi",
+            "definitions": [
+                "Happiness or joy",
+                "A feeling of pleasure and contentment",
+                "A state of being happy"
+            ],
+            "examples": [
+                "خوشی کی کوئی قیمت نہیں",
+                "میں بہت خوش ہوں"
+            ],
+            "categories": [
+                "Emotions",
+                "Happiness"
+            ],
+            "pronunciation": "khu-shi"
+        },
+        {
+            "word": "دوستی",
+            "roman": "dosti",
+            "definitions": [
+                "Friendship or companionship",
+                "A close relationship between friends",
+                "A bond of mutual affection"
+            ],
+            "examples": [
+                "دوستی ایک قیمتی رشتہ ہے",
+                "دوستی کی کوئی عمر نہیں"
+            ],
+            "categories": [
+                "Relationships",
+                "Social"
+            ],
+            "pronunciation": "dos-ti"
+        },
+        {
+            "word": "علم",
+            "roman": "ilm",
+            "definitions": [
+                "Knowledge or learning",
+                "Understanding or awareness",
+                "Education or wisdom"
+            ],
+            "examples": [
+                "علم انسان کی سب سے بڑی دولت ہے",
+                "علم حاصل کرنا فرض ہے"
+            ],
+            "categories": [
+                "Education",
+                "Knowledge"
+            ],
+            "pronunciation": "ilm"
+        },
+        {
+            "word": "خواب",
+            "roman": "khwaab",
+            "definitions": [
+                "A dream or aspiration",
+                "Something imagined during sleep",
+                "A cherished goal or ambition"
+            ],
+            "examples": [
+                "خواب دیکھنا کوئی بری بات نہیں",
+                "میں نے ایک خوبصورت خواب دیکھا"
+            ],
+            "categories": [
+                "Dreams",
+                "Imagination"
+            ],
+            "pronunciation": "khwaab"
+        },
+        {
+            "word": "وقت",
+            "roman": "waqt",
+            "definitions": [
+                "Time or moment",
+                "A specific period or duration",
+                "The present moment"
+            ],
+            "examples": [
+                "وقت کی قدر کرو",
+                "وقت سب سے قیمتی چیز ہے"
+            ],
+            "categories": [
+                "Time",
+                "Philosophy"
+            ],
+            "pronunciation": "waqt"
+        },
+        {
+            "word": "امید",
+            "roman": "umeed",
+            "definitions": [
+                "Hope or expectation",
+                "A feeling of optimism",
+                "Belief in a positive outcome"
+            ],
+            "examples": [
+                "امید پر دنیا قائم ہے",
+                "امید کی کرن ہمیشہ روشن رہتی ہے"
+            ],
+            "categories": [
+                "Emotions",
+                "Optimism"
+            ],
+            "pronunciation": "u-meed"
+        }
+    ]
+}
