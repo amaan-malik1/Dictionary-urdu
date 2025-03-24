@@ -1,0 +1,13 @@
+# Allow all web crawlers
+User-agent: *
+Allow: /
+
+# Sitemap path
+Sitemap: https://urdu-dictionary.web.app/sitemap.xml
+
+# Disallow sensitive routes
+Disallow: /login
+Disallow: /signup
+Disallow: /profile
+Disallow: /reset-password
+Disallow: /bookmarks 

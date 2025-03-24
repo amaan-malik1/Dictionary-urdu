@@ -8,11 +8,11 @@ function SearchBar() {
     const [loading, setLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const navigate = useNavigate();
-    const suggestionsRef = useRef(null);
+    const searchRef = useRef(null);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
-            if (searchTerm.length < 2) {
+            if (!searchTerm.trim() || searchTerm.length < 2) {
                 setSuggestions([]);
                 return;
             }
@@ -35,7 +35,7 @@ function SearchBar() {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowSuggestions(false);
             }
         };
@@ -44,45 +44,70 @@ function SearchBar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleSearch = (word) => {
-        if (!word.trim()) return;
-        navigate(`/word/${encodeURIComponent(word)}`);
-        setSearchTerm('');
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (!searchTerm.trim()) return;
+        navigate(`/word/${encodeURIComponent(searchTerm)}`);
         setShowSuggestions(false);
     };
 
+    const handleSuggestionClick = (word) => {
+        navigate(`/word/${encodeURIComponent(word)}`);
+        setShowSuggestions(false);
+        setSearchTerm('');
+    };
+
     return (
-        <div className="relative w-full max-w-2xl mx-auto" ref={suggestionsRef}>
-            <div className="relative">
+        <div className="relative" ref={searchRef}>
+            <form onSubmit={handleSearch} className="flex">
                 <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setShowSuggestions(true);
+                    }}
                     onFocus={() => setShowSuggestions(true)}
-                    placeholder="Search for a word..."
-                    className="w-full px-4 py-2 text-lg border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Search for an Urdu word..."
+                    className="w-full p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {loading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                    </div>
-                )}
-            </div>
+                <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600 transition-colors"
+                >
+                    Search
+                </button>
+            </form>
 
-            {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute w-full mt-1 bg-white border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => (
-                        <div
-                            key={index}
-                            onClick={() => handleSearch(suggestion.word)}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                            <div className="font-medium">{suggestion.word}</div>
-                            {suggestion.roman && (
-                                <div className="text-sm text-gray-500">{suggestion.roman}</div>
-                            )}
+            {showSuggestions && searchTerm.length >= 2 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {loading ? (
+                        <div className="p-3 text-center text-gray-500">Loading...</div>
+                    ) : suggestions.length > 0 ? (
+                        <ul>
+                            {suggestions.map((suggestion) => (
+                                <li
+                                    key={suggestion.id}
+                                    onClick={() => handleSuggestionClick(suggestion.word)}
+                                    className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200"
+                                >
+                                    <div className="font-bold">{suggestion.word}</div>
+                                    <div className="text-sm text-gray-600">{suggestion.roman}</div>
+                                    {suggestion.definitions && suggestion.definitions[0] && (
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {suggestion.definitions[0].length > 70
+                                                ? `${suggestion.definitions[0].substring(0, 70)}...`
+                                                : suggestion.definitions[0]}
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="p-3 text-center text-gray-500">
+                            No suggestions found
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
         </div>

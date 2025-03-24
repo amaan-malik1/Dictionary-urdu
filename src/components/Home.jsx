@@ -1,84 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { GiArchiveResearch } from "react-icons/gi";
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getRecentWords, getWordSuggestions } from '../services/dictionaryService';
-import WordOfDay from './WordOfDay';
 import SearchBar from './SearchBar';
+import { getRecentWords } from '../services/dictionaryService';
 
 /**
  * Home Component
  * Landing page with search functionality and featured content
  */
 const Home = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [recentWords, setRecentWords] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [words, setWords] = useState([]);
 
   useEffect(() => {
     const loadRecentWords = async () => {
-      try {
-        const words = await getRecentWords(5);
-        setRecentWords(words);
-      } catch (error) {
-        console.error('Error loading recent words:', error);
-      }
+      const recentWords = await getRecentWords();
+      setWords(recentWords);
     };
-
     loadRecentWords();
   }, []);
-
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!searchTerm.trim()) {
-        setSuggestions([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const results = await getWordSuggestions(searchTerm);
-        setSuggestions(results);
-      } catch (error) {
-        console.error('Error fetching suggestions:', error);
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm]);
-
-  const handleSearch = (word) => {
-    if (!word.trim()) return;
-    navigate(`/word/${encodeURIComponent(word)}`);
-  };
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5
-      }
-    }
-  };
 
   return (
     <div className="home">
@@ -149,12 +88,6 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="word-of-day-section py-8">
-        <div className="container">
-          <WordOfDay />
-        </div>
-      </section>
-
       <motion.div
         className="max-w-4xl mx-auto p-4"
         initial={{ opacity: 0, y: 20 }}
@@ -168,6 +101,21 @@ const Home = () => {
 
         <SearchBar />
       </motion.div>
+
+      {words.length > 0 && (
+        <div className="recent-words">
+          <h2>Recent Words</h2>
+          <ul>
+            {words.map(word => (
+              <li key={word.id}>
+                <Link to={`/word/${word.id}`}>
+                  {word.word} - {word.roman}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

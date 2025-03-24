@@ -1,6 +1,5 @@
 import { collection, query, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { collection, query, where } from 'firebase/firestore';
 
 export const verifySetup = async () => {
     const checks = {

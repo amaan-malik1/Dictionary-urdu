@@ -1,32 +1,58 @@
 import { initializeApp } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 
+// Use environment variables for configuration
 const firebaseConfig = {
     // Verify these values match your Firebase project settings
-    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID,
-    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+    apiKey: "AIzaSyBEcujN_SfTF7YgaQAZcHlq0SUqXxMB-9Q",
+    authDomain: "learnurdu-18e49.firebaseapp.com",
+    projectId: "learnurdu-18e49",
+    storageBucket: "learnurdu-18e49.firebasestorage.app",
+    messagingSenderId: "293890203517",
+    appId: "1:293890203517:web:cf96bc65e1544c5f92b614",
+    measurementId: "G-8SZLBENGWD"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
 
-// Enable offline persistence
-enableIndexedDbPersistence(db)
-    .catch((err) => {
-        console.error('Persistence error:', err);
-    });
+// Initialize Firestore with persistence
+const db = getFirestore(app);
+
+// Enable offline persistence (with error handling)
+try {
+    enableIndexedDbPersistence(db)
+        .then(() => console.log('Offline persistence enabled'))
+        .catch((err) => {
+            if (err.code === 'failed-precondition') {
+                console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+            } else if (err.code === 'unimplemented') {
+                console.warn('The current browser does not support offline persistence.');
+            } else {
+                console.error('Persistence error:', err);
+            }
+        });
+} catch (error) {
+    console.error('Failed to enable persistence:', error);
+}
+
+// Initialize Authentication
+const auth = getAuth(app);
+
+// Initialize Analytics conditionally
+let analytics = null;
+isSupported().then(supported => {
+    if (supported) {
+        analytics = getAnalytics(app);
+        console.log('Analytics initialized');
+    } else {
+        console.log('Analytics not supported in this environment');
+    }
+}).catch(err => {
+    console.error('Analytics initialization error:', err);
+});
 
 // Add error handling for initialization
 auth.onAuthStateChanged((user) => {
@@ -34,11 +60,13 @@ auth.onAuthStateChanged((user) => {
 });
 
 // Add some debug logging
-console.log('Firebase initialized:', app);
+console.log('Firebase initialized:', app.name);
 
 // Enable analytics logging in production only
 if (process.env.NODE_ENV === 'production') {
     analytics.setAnalyticsCollectionEnabled(true);
 }
 
-export { app, analytics, db, auth, storage }; 
+export { db, analytics };
+
+export default app; 

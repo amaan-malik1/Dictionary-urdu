@@ -2,30 +2,40 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { initializeApp } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics';
 import './index.css';
-
-// Your Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyBEcujN_SfTF7YgaQAZcHlq0SUqXxMB-9Q",
-    authDomain: "learnurdu-18e49.firebaseapp.com",
-    projectId: "learnurdu-18e49",
-    storageBucket: "learnurdu-18e49.firebasestorage.app",
-    messagingSenderId: "293890203517",
-    appId: "1:293890203517:web:cf96bc65e1544c5f92b614",
-    measurementId: "G-8SZLBENGWD"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import * as Sentry from "@sentry/react";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    <React.StrictMode>
-        <BrowserRouter>
-            <App />
-        </BrowserRouter>
-    </React.StrictMode>
-); 
+    <BrowserRouter>
+        <App />
+    </BrowserRouter>
+);
+
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below.
+serviceWorkerRegistration.register({
+    onUpdate: (registration) => {
+        // Show a notification to the user about the update
+        const updateAvailable = window.confirm(
+            'A new version of the app is available. Load the new version?'
+        );
+
+        if (updateAvailable && registration && registration.waiting) {
+            // Send a message to the service worker to skip waiting
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+            // Reload the page to activate the new service worker
+            window.location.reload();
+        }
+    },
+    onSuccess: (registration) => {
+        console.log('Service worker registered successfully');
+    }
+});
+
+Sentry.init({
+    dsn: "YOUR_SENTRY_DSN",
+    environment: process.env.NODE_ENV
+}); 

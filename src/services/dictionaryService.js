@@ -1,172 +1,274 @@
-import dictionaryData from '../data/dictionary.json';
 import { db } from '../firebase/config';
-import { collection, doc, getDoc, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, orderBy } from 'firebase/firestore';
 
-// Add IDs to words if they don't exist
-const wordsWithIds = dictionaryData.words.map((word, index) => ({
-    ...word,
-    id: word.id || `word_${index}`
-}));
-
-/**
- * Search for words in the dictionary
- * @param {string} query - Search query in Urdu or Roman Urdu
- * @returns {Array} Array of matching words
- */
-export const searchWords = (query) => {
-    if (!query.trim()) return [];
-    const searchTerm = query.toLowerCase().trim();
-    return wordsWithIds.filter(word =>
-        word.word.toLowerCase().includes(searchTerm) ||
-        word.roman.toLowerCase().includes(searchTerm)
-    );
+// Dictionary data will be cached here
+const cache = {
+  index: null,
+  letters: {},
+  words: new Map(),
+  searches: new Map(),
+  timeout: 5 * 60 * 1000 // 5 minutes
 };
 
-// Cache for word details
-const wordCache = new Map();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+// Helper function to fetch JSON from Firebase Hosting
+async function fetchJson(path) {
+  const response = await fetch(path);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${path}: ${response.statusText}`);
+  }
+  return response.json();
+}
 
-/**
- * Get detailed information about a specific word
- * @param {string} word - Word to search for (in Urdu or Roman Urdu)
- * @returns {Object|null} Word details or null if not found
- */
-export const getWordDetails = async (word) => {
+// Get the full dictionary index (just words and roman representations)
+export async function getDictionaryIndex() {
+  if (!cache.index) {
     try {
-        if (!word) {
-            console.log('No word provided');
-            return null;
-        }
-
-        console.log('Fetching word details for:', word);
-        
-        const wordsRef = collection(db, 'words');
-        const q = query(
-            wordsRef,
-            where('word', '==', word.trim().toLowerCase())
-        );
-
-        console.log('Executing query...');
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            console.log('No matching word found');
-            return null;
-        }
-
-        const wordDoc = snapshot.docs[0];
-        const wordData = wordDoc.data();
-
-        console.log('Word found:', wordData);
-
-        return {
-            id: wordDoc.id,
-            word: wordData.word || '',
-            roman: wordData.roman || '',
-            definitions: wordData.definitions || [],
-            examples: wordData.examples || [],
-            categories: wordData.categories || []
-        };
+      cache.index = await fetchJson('/data/index.json');
     } catch (error) {
-        console.error('Error fetching word details:', error);
-        throw new Error('Failed to fetch word details');
+      console.error('Error fetching dictionary index:', error);
+      return [];
     }
-};
+  }
+  return cache.index;
+}
 
-/**
- * Get a word of the day
- * @returns {Object} A word from the dictionary
- */
-export const getWordOfDay = () => {
-    const today = new Date();
-    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    const index = dayOfYear % wordsWithIds.length;
-    return wordsWithIds[index];
-};
+// Search words
+export async function searchWords(searchTerm) {
+  if (!searchTerm?.trim()) return [];
 
-/**
- * Get random words from the dictionary
- * @param {number} count - Number of random words to return
- * @returns {Array} Array of random words
- */
-export const getRandomWords = (count = 5) => {
-    const shuffled = [...wordsWithIds].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-};
+  const cacheKey = `search_${searchTerm}`;
+  const cached = cache.searches.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < cache.timeout)) {
+    return cached.data;
+  }
+
+  try {
+    const wordsRef = collection(db, 'words');
+    const searchTermLower = searchTerm.toLowerCase().trim();
+
+    const [urduResults, romanResults] = await Promise.all([
+      getDocs(query(
+        wordsRef,
+        where('word', '>=', searchTermLower),
+        where('word', '<=', searchTermLower + '\uf8ff'),
+        limit(10)
+      )),
+      getDocs(query(
+        wordsRef,
+        where('roman', '>=', searchTermLower),
+        where('roman', '<=', searchTermLower + '\uf8ff'),
+        limit(10)
+      ))
+    ]);
+
+    const results = Array.from(new Set([
+      ...urduResults.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      ...romanResults.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    ]));
+
+    // Cache the results
+    cache.searches.set(cacheKey, {
+      data: results,
+      timestamp: Date.now()
+    });
+
+    return results;
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
+  }
+}
+
+// Get word details
+export async function getWordDetails(wordId) {
+  if (!wordId) return null;
+
+  try {
+    const wordsRef = collection(db, 'words');
+    const q = query(wordsRef, where('id', '==', wordId), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) return null;
+
+    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  } catch (error) {
+    console.error('Error getting word details:', error);
+    return null;
+  }
+}
+
+// Get word suggestions
+export async function getWordSuggestions(term) {
+  if (!term?.trim()) return [];
+
+  try {
+    const wordsRef = collection(db, 'words');
+    const searchTermLower = term.toLowerCase().trim();
+
+    const q = query(
+      wordsRef,
+      where('searchTerms', 'array-contains', searchTermLower),
+      limit(5)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting suggestions:', error);
+    return [];
+  }
+}
+
+// Get word of the day
+export async function getWordOfDay() {
+  try {
+    // Try Firestore first for a curated word of the day
+    const wordsRef = collection(db, 'wordOfDay');
+    const q = query(wordsRef, orderBy('date', 'desc'), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const wordOfDayData = snapshot.docs[0].data();
+      if (wordOfDayData.wordId) {
+        const wordDetails = await getWordDetails(wordOfDayData.wordId);
+        return wordDetails;
+      }
+    }
+
+    // Fall back to selecting a random word from the index
+    if (!cache.index) {
+      await getDictionaryIndex();
+    }
+
+    if (cache.index && cache.index.length > 0) {
+      const randomIndex = Math.floor(Math.random() * cache.index.length);
+      const randomWord = cache.index[randomIndex];
+      return await getWordDetails(randomWord.id);
+    }
+
+    // Default fallback word
+    return {
+      id: 'salam',
+      word: 'سلام',
+      roman: 'salam',
+      pronunciation: 'sa-laam',
+      definitions: ['Peace', 'Greeting'],
+      examples: ['السلام علیکم', 'سلام کرنا'],
+      categories: ['Greeting', 'Common']
+    };
+  } catch (error) {
+    console.error('Error getting word of day:', error);
+
+    // Return a default word on error
+    return {
+      id: 'salam',
+      word: 'سلام',
+      roman: 'salam',
+      pronunciation: 'sa-laam',
+      definitions: ['Peace', 'Greeting'],
+      examples: ['السلام علیکم', 'سلام کرنا'],
+      categories: ['Greeting', 'Common']
+    };
+  }
+}
+
+// Get recent words
+export async function getRecentWords() {
+  try {
+    // Try to get recently added words from Firestore
+    const wordsRef = collection(db, 'words');
+    const q = query(wordsRef, orderBy('createdAt', 'desc'), limit(10));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    // Fall back to a selection from the static dictionary
+    if (!cache.index) {
+      await getDictionaryIndex();
+    }
+
+    if (cache.index && cache.index.length > 0) {
+      // Get a selection of words across the alphabet
+      const recentWords = [];
+      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
+      for (let i = 0; i < alphabet.length; i++) {
+        const letter = alphabet[i];
+        const letterWords = cache.index.filter(word => word.roman.charAt(0).toLowerCase() === letter);
+        const randomIndex = Math.floor(Math.random() * letterWords.length);
+        recentWords.push(letterWords[randomIndex]);
+      }
+
+      return recentWords.slice(0, 10);
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error getting recent words:', error);
+    return [];
+  }
+}
 
 /**
  * Get words by category
  * @param {string} category - Category to filter by
- * @returns {Array} Array of words in the category
+ * @param {number} limitCount - Number of words to retrieve
+ * @returns {Promise<Array>} List of words in the category
  */
-export const getWordsByCategory = (category) => {
-    return wordsWithIds.filter(word =>
-        word.categories.includes(category)
+export const getWordsByCategory = async (category, limitCount = 20) => {
+  try {
+    const wordsRef = collection(db, 'words');
+    const q = query(
+      wordsRef,
+      where('categories', 'array-contains', category),
+      limit(limitCount)
     );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting words by category:', error);
+    return [];
+  }
 };
 
 /**
  * Get all available categories
- * @returns {Array} Array of unique categories
+ * @returns {Promise<Array>} List of all categories
  */
-export const getAllCategories = () => {
+export const getAllCategories = async () => {
+  try {
+    // This would typically come from a separate 'categories' collection
+    // For now, we'll query a limited set of words and extract categories
+    const wordsRef = collection(db, 'words');
+    const q = query(wordsRef, limit(100));
+    const snapshot = await getDocs(q);
+
     const categories = new Set();
-    wordsWithIds.forEach(word => {
-        word.categories.forEach(category => categories.add(category));
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.categories && Array.isArray(data.categories)) {
+        data.categories.forEach(category => categories.add(category));
+      }
     });
+
     return Array.from(categories);
+  } catch (error) {
+    console.error('Error getting categories:', error);
+    return [];
+  }
 };
 
-// Optimized suggestion service
-const suggestionCache = new Map();
-
-export const getWordSuggestions = async (searchTerm) => {
-    try {
-        if (!searchTerm || searchTerm.length < 2) return [];
-
-        const wordsRef = collection(db, 'words');
-        const q = query(
-            wordsRef,
-            where('word', '>=', searchTerm.toLowerCase()),
-            where('word', '<=', searchTerm.toLowerCase() + '\uf8ff'),
-            orderBy('word'),
-            limit(10)
-        );
-
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                word: data.word || '',
-                roman: data.roman || '',
-                definitions: data.definitions || []
-            };
-        });
-    } catch (error) {
-        console.error('Error getting suggestions:', error);
-        return [];
-    }
-};
-
-// Add this function to get recent words
-export const getRecentWords = async (limit = 10) => {
-    try {
-        const wordsRef = collection(db, 'words');
-        const q = query(wordsRef, orderBy('createdAt', 'desc'), limit);
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                word: data.word || '',
-                roman: data.roman || '',
-                definitions: data.definitions || []
-            };
-        });
-    } catch (error) {
-        console.error('Error getting recent words:', error);
-        return [];
-    }
+// Clear cache function for testing or manual cache clearing
+export const clearCache = () => {
+  cache.index = null;
+  cache.letters = {};
+  cache.words.clear();
+  cache.searches.clear();
+  console.log('Dictionary cache cleared');
 };
